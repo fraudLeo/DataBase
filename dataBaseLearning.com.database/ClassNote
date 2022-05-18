@@ -1,0 +1,118 @@
+sql语句的分类：
+    1. DQL（数据查询语言）：查询语句，凡是select语句都是DQL              Data Query Language
+    2. DML（数据操作语言）：insert delete update 对表中的数据进行怎删改。Data Manipulation Language
+    3. DDL（数据定义语言）：creat drop alter 对表结构的怎删改           Data Definition Language
+    4. TCL（事务控制语言）：commit提交事务，rollback回滚事务            Transaction Control Language
+    5. DCL（数据控制语言）：grant授权，revoke撤销权限等                 Data Control Language
+
+
+导入数据： source （路径。。。.sql)
+
+查看表结构： desc （table名）
+
+结束语句： \c
+
+退出： exit
+
+查看创建表的语句： show create table (表名）
+
+简单的查询语句（DQL）：
+    语法格式： select 字段1 ，字段2，字段3.。。。。from 表名;
+    字段上面要加单引号
+   条件查询：select 字段1 ，字段2，字段3.。。。。from 表名 where 条件   ;
+
+   in等同于or
+   select ename,job from emp where job = 'SALESMAN' ir jo = 'MANAGER';
+   select ename,job from emp where job in('SALESMAN','MANAGER');
+
+   模糊查询like？(在模糊查询中，必须掌握两个特殊符号 一个是% 另一个是_)
+   %代表的是多个字符，_代表的是一个字符 \代表转义
+    找出名字中含有o的
+    selcet ename from emp where ename like '%O%';
+    找出第二个字母是A的
+    select ename from emp where ename like '_A%';
+
+
+排序(升序降序)
+    按照工资升序，找出员工名和薪资
+    select ename,sal from emp order by sal;(后面加asc指定升序，dexc指定降序）
+    select ename,sal from emp order by 1;(代表的是按照ename进行排序）
+
+分组函数自动忽略null 分组函数有五个 求和，计数，平均值，最大值，最小值
+分组函数有另一个名字：多行处理函数 输入多行，最终结果是一行
+当计算过程中出现了null，不管其他出现了啥，结果就是null
+select sum(comm) from emp where comm is not null;
+
+单行处理函数 输入一行 输出一行
+ifnull() 空处理函数 如果是null，就。。。szelect ename ifnull(comm,0) from emp 如果comm是null，就将其替换为0
+
+倘若这样写，会有1111的错误，提示无效分组函数
+select ename ,sal from emp where sal >avg(sal);//原因：分组函数不能直接出现在where语句里面
+
+group by ：按照某个字段或者某些字段进行分组
+having： 是对分组后的数据进行再次过滤
+案例： 找出每个工作岗位的最高薪资。
+    select job，max（sal） from emp group by job？？
+
+     select max(sal)  from emp group by sal;//先进行分组，再对其求值
+        当一条sql语句没有group by 的时候，整张表的数据会自成一组
+        这里就可以回到50行为什么是错的了：因为group by 是在where执行之后才会执行的
+        执行顺序：
+            select      5
+                。。
+            from        1
+                。。
+            where       2
+                。。
+            group by    3
+                。。
+            having      4
+                。。
+            order by    6
+                。。
+       所以上面的语句应该分两步
+       select ename,sal from emp where sal >(select avg(sal) from emp);
+       select语句中可以嵌套，是子查询
+       如果一个sql语句出现group by 的时候，select后面只能跟上分组字段和参与分组函数，否则出来的结果毫无意义，就是错的
+       例如 select ename，avg(sal),job from emp group by job; 就是错的
+       但是 select job，avg（sal）from emp group by job;就是对的
+
+       多个字段能不能联合起来一块分组？
+        案例：找出每个部门不同工作岗位的最高薪资
+ 
+        select
+            department,job,max(sal)
+        from
+            emp
+        group by
+            department,job;
+
+        案例：找出每个部门的最高薪资，要求显示薪资大于2500的数据
+        selset
+            max(sal)
+        from
+            select
+                job
+            from
+                emp
+            group by
+                job
+        where
+            sal>2500
+
+            以上代码感觉可行，
+            select max(sal), deptartment from emp group by department having max(sal)>2900//这种效率低
+            select max(sal), deptartment from emp where sal > 2900 group by department;//这种效率高一点
+            只有在where搞不定的时候再用having
+
+        案例：找出每个部门的平均薪资，显示大于2000的数据
+            select
+                department,avg(sal)
+            from
+                emp
+            group by
+                department
+            having
+                avg(sal)>2000;
+
+        having 永远只和  group by搭档
