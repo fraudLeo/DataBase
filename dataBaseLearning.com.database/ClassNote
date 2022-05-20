@@ -79,7 +79,7 @@ having： 是对分组后的数据进行再次过滤
 
        多个字段能不能联合起来一块分组？
         案例：找出每个部门不同工作岗位的最高薪资
- 
+
         select
             department,job,max(sal)
         from
@@ -116,3 +116,201 @@ having： 是对分组后的数据进行再次过滤
                 avg(sal)>2000;
 
         having 永远只和  group by搭档
+
+
+
+
+
+day2
+
+
+    1. 关于查询结果集的去重？
+        select distinct job from emp;//distinct 关键字去重
+        distinct前面不能添加字段，他只能出现在所有字段的最前面，他的去重是指后面所有字段加在一起去重
+
+    2. 什么是连接查询？
+        在实际开发中，大部分情况下都不是单表查询，一般都是多张表联合查询最终取得结果，
+        在实际开发中，一般一个业务会对应多张表，起码两张表
+
+    3. 连接方式来划分连接查询：（另一种方式是年代来划分：sql92，老的dba还在使用；    sql99：新的）
+        内连接
+            （等值连接）
+            （非等值连接）between and
+            （自链接）
+        外连接
+            （左外连接）
+            （右外连接）
+        全连接（这个不讲，很少用）
+
+    4. 在表的连接查询方面有一种现象被称为笛卡尔及现象。
+        案例：找出每一位员工的部门名称 要求显示员工名和部门名
+
+           从一张表取员工的名字和部门序号 从另一张表获取部门的名称
+           倘若使用：select ename,dname from emp,dept;
+           那么最终就会出现ename的数量*dname的数量 （如果没有条件限制地查询）
+
+           笛卡尔积现象：当两张表进行连接查询的时候，没有任何条件进行限制，最终的查询结果条数是两张表记录条数的成绩。
+           关于表的别名：
+             select e.ename,d.dname from emp e ,dept d;
+             表的别名优点：执行效率高
+                         可读性高
+           怎么避免：当然是添加条件
+            思考：为了避免笛卡尔积现象，会减少匹配次数吗？
+                不会 次数还是56次，只不过是显示的有效记录
+                所以上面的案例应该这么写：
+                    select e.ename,d.dname from emp e, dpet d where e.deptno = d.deptno;//sql92,老语法
+
+    5. 内连接之等值连接：最大的特点是 田间是等量关系
+        案例： 查询每个员工的部门名称，要求显示员工名和部门名。
+
+        sql92： select e.ename,d.dname from emp e, dept d where e.deptno = d.deptno;
+        sql99:  select e.ename, d.dname from emp e join dept d on e.deptno = d.deptno;
+
+            语法：
+                ...
+                    A
+                join
+                    B
+                on
+                    连接条件
+                where
+                    ...
+             SQL99 的语法结构更清晰点，表的连接条件和后来的where条件分离了。
+
+             join前面加上inner 代表的就是内连接，可省略，但是新手就不要省略了，带着inner可读性该
+
+    6. 内连接之非等值连接：最大的特点是：连接条件中的关系是非等量关系
+        案例：找出每个员工的工资等级，要求显示员工名，工资，工资等级。
+
+            select e.ename,e.sal,s.grade from emp e inner join salgrade s on e.sal between s.losal and s.hisal;
+
+    7. 自连接：最大的特点是：一张表看作两张表： 自己连接自己
+            案例： 找出员工的上级领导 要求显示员工名和对应的领导名
+            select e1.ename,e2.ename from emp e1 inner join emp e2 on e1.mgr = e2.empno;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+         asdasdadsasdasdasdasdasdasd
+
+         asdasdasdasdasdasdasdasdasdasdasdasdasdasdasd
+
+
+
+
+      演示读未提交隔离等级：
+        第一：演示事物的read uncommitted
+            设置事物的隔离级别：set global transaction isolation level read uncommitted;
+            查看事物的全局隔离级别：
+                select @@global.tx isolation;
+        第二：演示 read committed
+                设置事物的隔离级别：set global transaction isolation level read committed;
+        第三：repeatable
+        第四: serializable//串行
+
+
+索引：
+    什么是索引？有什么用？
+        索引就相当于一本书的目录，通过目录可以快速找到对应的资源
+        在数据库方面，查询一张表的的时候有两种检索方式：
+            第一种方式：全表扫描
+            第二种方式：根据索引检索效率蘅皋
+
+        索引为什么可以提高检索效率？
+            其实最根本的原理是缩小了扫描的范围
+
+            索引对象虽然也可以提高检索效率，但是不能随意地添加索引 因为索引也是数据库当中的对象，也需要数据库不断地维护，是有维护成本的
+            比如，表中的数据经常被修改，这样就不适合添加索引，因为数据一旦修改，索引需要重新排序并且维护
+
+            添加索引是给某一个字段，或者说某些字段添加索引
+            select ename, sal from emp where ename = 'SMITH';
+            当ename字段上没有添加索引的时候，以上的sql语句会进行全表扫描，扫描ename字段中的所有值
+            当ename字段上添加索引的时候，以上的sql语句会根据索引扫描，快速定位
+        怎么创建索引对象？怎么删除索引对象？
+
+        什么时候考虑给字段添加索引？（满足什么条件？）
+            1. 数据量庞大
+            2. 该字段很少DML操作
+            3. 该字段经常出现在where子句里面
+
+        主键和具有unique约束的字段自动会添加索引
+        根据主键查询效率很高，
+        查看sql语句的执行计划：
+            explain select ename,sal from emp where sal = 5000;
+
+        创建索引：
+            create index emp_sal_index on emp(sal);
+        索引的底层原理采用的数据结构是B+Tree
+            通过B Tree 缩小扫描范围，底层索引进行了排序，分区，索引会携带数据在表中的物理地址，最终通过索引检索到数据之后，获取到关联的物理地址，通过物理地址定位表中的数据，效率是最高的
+
+        索引的分类：
+            单一索引：给单个字段添加索引
+            复合索引：给多个字段联合起来添加一个索引
+            主键索引：竹简上会自动添加索引
+            唯一索引： 有unique约束的字段上会自动添加索引
+            。。。。
+        模糊查询的时候，第一个通配符时使用的%，这个时候索引是失效的，因为她没办法判断第一个字符是什么，就无法先进行自动排序了
+
+
+    视图：
+        什么是视图？
+            站在不同的角度去看数据 同一张表的数据，通过不同角度去看待
+        咋那么创建视图？怎么删除视图？
+            create view myview as select empno,ename from emp;
+            drop view myview;
+        对视图进行增改查，会影响到原表的数据。（通过视图影响原表数据的，不是直接操作的原表）
+         create table emp_bak as select * from emp//复制原表
+         create view myview1 as select empno,ename,sal from emp_bak;
+         update myview1 set enamel= 'hehe'，sal = 1 whereempno = 7777;//通过视图修改原表数据
+         delete from myview1 where empno = 7777;//通过试图删除原表数据
+
+    视图的作用：
+        视图的作用可以隐藏表的实现细节。保密级别较高的，不会提高检索效率，之对外提供相关视图，java程序员只对视图对象进行crud
+
+
+
+数据库设计三范式：
+    什么是设计范式？
+        设计表的依据。按照这个三范式设计的表不会出现数据冗余
+
+    三范式都是哪些？
+        第一范式：任何一张表都应该有主键，并且每个字段原子性不可再分
+        第二范式：所有建立在第一范式的基础之上，所有非主键字段完全依赖主键，不能产生部份依赖
+        第三范式：建立在第二范式的基础之上，所有非主键字段直接依赖主键，不能产生传递依赖。不能产生函数关系，比如字段c不能由字段b经过函数获取。
+        例子：
+        课程编号	课程名字	上课时间	任课老师	老师电话	老师职位
+        101	马克思理论基础	8:00	Lily	18016253155	讲师
+        102	经济学	14:00	Lucy	18055231233	教授
+        主键：课程编号
+        大致一看，上表中的非主键列确实完全是依赖于主键（课程编号）的，符合第二范式2NF。但是问题是：老师电话，老师职位直接依赖的是任课老师（非主键列），而不是直接依赖于主键，它是通过传递才依赖于主键，所以不符合 3NF。
+        解决方案：依然是通过拆分，把上述学生课表拆分为课程表和教师表。
+
+一对一怎么设计
+    1. 主键共享
+    2. 外键唯一，加上唯一性约束
